@@ -87,21 +87,36 @@ struct RemainingSecondsView : View {
 }
 
 struct SettingsView : View {
-    @Binding var secondsRemaining: Int
-    @Binding var minutesPerDay: Int
+    @Binding var stretchSecondsRemaining: Int
+    @Binding var stretchMinutesPerDay: Int
+    @Binding var practiceSecondsRemaining: Int
+    @Binding var practiceMinutesPerDay: Int
     
     var body : some View {
         VStack {
-            Stepper(value: $minutesPerDay) {
-                Text("Minutes / Day: \(minutesPerDay)").padding()
+            Stepper(value: $stretchMinutesPerDay) {
+                Text("Stretch Minutes / Day: \(stretchMinutesPerDay)").padding()
             }.padding()
-            Button("Reset Time") {
-                secondsRemaining = minutesPerDay * 60
+            Button("Reset Stretch Time") {
+                stretchSecondsRemaining = stretchMinutesPerDay * 60
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
-            Button("Add 5 Minutes") {
-                secondsRemaining += 5 * 60
+            Button("Add 5 Stretch Minutes") {
+                stretchSecondsRemaining += 5 * 60
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            Stepper(value: $practiceMinutesPerDay) {
+                Text("Practice Minutes / Day: \(practiceMinutesPerDay)").padding()
+            }.padding()
+            Button("Reset Practice Time") {
+                practiceSecondsRemaining = practiceMinutesPerDay * 60
+            }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            Button("Add 5 Practice Minutes") {
+                practiceSecondsRemaining += 5 * 60
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
@@ -110,7 +125,7 @@ struct SettingsView : View {
 }
 
 struct GraphView : View {
-    let data: [StretchLog]
+    let data: [DailyTimeLog]
     @State private var pastDaysToShow: Int = 30
     
     var body : some View {
@@ -191,37 +206,58 @@ struct GraphView : View {
 }
 
 struct ContentView: View {
-    @Binding var secondsRemaining: Int
-    @Binding var minutesPerDay: Int
+    @Binding var stretchSecondsRemaining: Int
+    @Binding var stretchMinutesPerDay: Int
+    @Binding var practiceSecondsRemaining: Int
+    @Binding var practiceMinutesPerDay: Int
     
     @Environment(\.scenePhase) private var scenePhase
     
-    let stretchLog: [StretchLog]
+    let stretchLog: [DailyTimeLog]
+    let practiceLog: [DailyTimeLog]
     let updateRemainingTime: () -> Void
     let recordStretch: (Int) -> Void
+    let recordPractice: (Int) -> Void
     let onSave: () -> Void
     
     var body: some View {
         return TabView {
-            // Timer tab
+            // Stretching: Timer tab
             RemainingSecondsView(
-                secondsRemaining: $secondsRemaining,
+                secondsRemaining: $stretchSecondsRemaining,
                 updateRemainingTime: updateRemainingTime,
                 recordStretch: recordStretch)
             .tabItem {
-                Label("Timer", systemImage: "clock")
+                Label("Stretch Timer", systemImage: "clock.fill")
             }
             
-            // Settings tab
+            // Stretching: Graph tab
             GraphView(data: stretchLog)
                 .tabItem {
-                    Label("Graph", systemImage: "chart.bar.fill")
+                    Label("Stretch Graph", systemImage: "chart.bar.fill")
+                }
+            
+            // Practice: Timer tab
+            RemainingSecondsView(
+                secondsRemaining: $practiceSecondsRemaining,
+                updateRemainingTime: updateRemainingTime,
+                recordStretch: recordPractice)
+            .tabItem {
+                Label("Practice Timer", systemImage: "clock")
+            }
+            
+            // Practice: Graph tab
+            GraphView(data: practiceLog)
+                .tabItem {
+                    Label("Practice Graph", systemImage: "chart.bar")
                 }
             
             // Settings tab
             SettingsView(
-                secondsRemaining: $secondsRemaining,
-                minutesPerDay: $minutesPerDay)
+                stretchSecondsRemaining: $stretchSecondsRemaining,
+                stretchMinutesPerDay: $stretchMinutesPerDay,
+                practiceSecondsRemaining: $practiceSecondsRemaining,
+                practiceMinutesPerDay: $practiceMinutesPerDay)
             .tabItem {
                 Label("Settings", systemImage: "gear")
             }
@@ -240,11 +276,17 @@ struct ContentView_Previews: PreviewProvider {
     @StateObject private static var store: UsefulDataStore = UsefulDataStore()
     static var previews: some View {
         ContentView(
-            secondsRemaining: $store.data.current.stretchingSecondsRemaining,
-            minutesPerDay: $store.data.settings.stretchingMinutesPerDay,
-            stretchLog: store.data.minutesOverTime()) {
+            stretchSecondsRemaining: $store.data.current.stretchingSecondsRemaining,
+            stretchMinutesPerDay: $store.data.settings.stretchingMinutesPerDay,
+            practiceSecondsRemaining: $store.data.current.practiceSecondsRemaining,
+            practiceMinutesPerDay: $store.data.settings.practiceMinutesPerDay,
+            stretchLog: store.data.minutesOverTime().0,
+            practiceLog: store.data.minutesOverTime().1) {
                 store.data.update()
             } recordStretch: {
+                _ in
+                // Do nothing
+            } recordPractice: {
                 _ in
                 // Do nothing
             } onSave: {

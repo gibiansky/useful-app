@@ -11,22 +11,54 @@ import Foundation
 struct UsefulSettings: Codable {
     // How many minutes to stretch per day.
     var stretchingMinutesPerDay: Int = 5
+    
+    // How many minutes to practice skills per day.
+    var practiceMinutesPerDay: Int = 5
+    
+    init() { }
+    
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        // Required field
+        stretchingMinutesPerDay = try values.decode(Int.self, forKey: .stretchingMinutesPerDay)
+        
+        // Optional field
+        practiceMinutesPerDay = try values.decodeIfPresent(Int.self, forKey: .practiceMinutesPerDay) ?? 1
+    }
 }
 
 enum UsefulAction: Codable {
     // Stretch for a given number of seconds
     case stretch(Int)
+    
+    // Practice skills for a given number of seconds
+    case practice(Int)
 }
 
 struct UsefulState: Codable {
     // How many seconds are remaining to stretch
     var stretchingSecondsRemaining: Int = 0
     
+    // How many seconds are remaining to stretch
+    var practiceSecondsRemaining: Int = 0
+    
     // When was the last time the app updated
     var lastUpdateDay: DateComponents? = nil
+    
+    init() { }
+    
+    init(from decoder: Decoder) throws {
+        let values = try decoder.container(keyedBy: CodingKeys.self)
+        // Required field
+        stretchingSecondsRemaining = try values.decode(Int.self, forKey: .stretchingSecondsRemaining)
+        lastUpdateDay = try values.decode(DateComponents?.self, forKey: .lastUpdateDay)
+        
+        // Optional field
+        practiceSecondsRemaining = try values.decodeIfPresent(Int.self, forKey: .practiceSecondsRemaining) ?? 0
+    }
 }
 
-struct StretchLog: Identifiable {
+struct DailyTimeLog: Identifiable {
     let date: Date
     let minutes: Double
     var id = UUID()
@@ -71,10 +103,11 @@ class UsefulData: Codable {
         
         // Update the data using the elapsed days
         current.stretchingSecondsRemaining += intervalDays * settings.stretchingMinutesPerDay * 60
+        current.practiceSecondsRemaining += intervalDays * settings.practiceMinutesPerDay * 60
         current.lastUpdateDay = UsefulData.currentYearMonthDay()
     }
     
-    func minutesOverTime() -> [StretchLog] {
+    func minutesOverTime() -> ([DailyTimeLog], [DailyTimeLog]) {
         let calendar = Calendar.autoupdatingCurrent
         
         // Allow for testing with a toggle
@@ -88,7 +121,7 @@ class UsefulData: Codable {
         ]
         
         if selectedActions.isEmpty {
-            return []
+            return ([], [])
         }
         
         // Get the first and last dates
@@ -109,20 +142,25 @@ class UsefulData: Codable {
         }
         
         // Collect the log
-        var log: [StretchLog] = []
+        var stretchLog: [DailyTimeLog] = []
+        var practiceLog: [DailyTimeLog] = []
         for component in allComponents {
             let dailyActions = selectedActions[component] ?? []
             let date = calendar.date(from: component)!
-            var minutes = 0.0
+            var stretchMinutes = 0.0
+            var practiceMinutes = 0.0
             for action in dailyActions {
                 switch(action) {
                 case .stretch(let seconds):
-                    minutes += Double(seconds) / 60.0
+                    stretchMinutes += Double(seconds) / 60.0
+                case .practice(let seconds):
+                    practiceMinutes += Double(seconds) / 60.0
                 }
             }
-            log.append(StretchLog(date, minutes))
+            stretchLog.append(DailyTimeLog(date, stretchMinutes))
+            practiceLog.append(DailyTimeLog(date, practiceMinutes))
         }
-        return log
+        return (stretchLog, practiceLog)
     }
     
     func addAction(_ action: UsefulAction) {

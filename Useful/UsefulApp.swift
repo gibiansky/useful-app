@@ -17,16 +17,24 @@ struct UsefulApp: App {
                 fatalError(error.localizedDescription)
             }
         }
-        
+        let (stretchLog, practiceLog) = store.data.minutesOverTime()
         return WindowGroup {
             ContentView(
-                secondsRemaining: $store.data.current.stretchingSecondsRemaining,
-                minutesPerDay: $store.data.settings.stretchingMinutesPerDay,
-                stretchLog: store.data.minutesOverTime()) {
+                stretchSecondsRemaining: $store.data.current.stretchingSecondsRemaining,
+                stretchMinutesPerDay: $store.data.settings.stretchingMinutesPerDay,
+                practiceSecondsRemaining: $store.data.current.practiceSecondsRemaining,
+                practiceMinutesPerDay: $store.data.settings.practiceMinutesPerDay,
+                stretchLog: stretchLog,
+                practiceLog: practiceLog) {
                 store.data.update()
             } recordStretch: { seconds in
                 if seconds > 5 {
                     store.data.addAction(UsefulAction.stretch(seconds))
+                }
+                doSave()
+            } recordPractice: { seconds in
+                if seconds > 5 {
+                    store.data.addAction(UsefulAction.practice(seconds))
                 }
                 doSave()
             } onSave: {
