@@ -15,6 +15,9 @@ struct UsefulSettings: Codable {
     // How many minutes to practice skills per day.
     var practiceMinutesPerDay: Int = 5
     
+    // How many calories today.
+    var caloriesToday: Int = 0
+    
     init() { }
     
     init(from decoder: Decoder) throws {
@@ -24,6 +27,7 @@ struct UsefulSettings: Codable {
         
         // Optional field
         practiceMinutesPerDay = try values.decodeIfPresent(Int.self, forKey: .practiceMinutesPerDay) ?? 1
+        caloriesToday = try values.decodeIfPresent(Int.self, forKey: .caloriesToday) ?? 0
     }
 }
 
@@ -105,6 +109,11 @@ class UsefulData: Codable {
         current.stretchingSecondsRemaining += intervalDays * settings.stretchingMinutesPerDay * 60
         current.practiceSecondsRemaining += intervalDays * settings.practiceMinutesPerDay * 60
         current.lastUpdateDay = UsefulData.currentYearMonthDay()
+        
+        // Reset calories if it's a new day
+        if intervalDays > 0 {
+            settings.caloriesToday = 0
+        }
     }
     
     func minutesOverTime() -> ([DailyTimeLog], [DailyTimeLog]) {

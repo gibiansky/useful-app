@@ -11,6 +11,7 @@ import Charts
 var existingTimer: Timer?
 
 struct RemainingSecondsView : View {
+    let title: String
     @Binding var secondsRemaining: Int
     
     @State private var isTiming: Bool = false
@@ -33,6 +34,10 @@ struct RemainingSecondsView : View {
         let display = String(format: "%02d:%02d:%02d", minutes, seconds, centiseconds)
         
         return VStack {
+            Text(title)
+                .font(.largeTitle)
+                .fontWeight(.heavy)
+                .padding()
             Text("Remaining: \(display)")
                 .font(.largeTitle)
                 .fontWeight(.heavy)
@@ -91,6 +96,7 @@ struct SettingsView : View {
     @Binding var stretchMinutesPerDay: Int
     @Binding var practiceSecondsRemaining: Int
     @Binding var practiceMinutesPerDay: Int
+    @Binding var caloriesToday: Int
     
     var body : some View {
         VStack {
@@ -120,11 +126,36 @@ struct SettingsView : View {
             }
             .buttonStyle(.borderedProminent)
             .controlSize(.large)
+            
+            // Calorie tracker
+            Text("Calories Today: \(caloriesToday)")
+                .font(.largeTitle)
+                .fontWeight(.heavy)
+                .padding()
+                .monospacedDigit()
+            HStack {
+                Button("Reset") {
+                    caloriesToday = 0
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                Button("+50") {
+                    caloriesToday += 50
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+                Button("+100") {
+                    caloriesToday += 100
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.large)
+            }
         }
     }
 }
 
 struct GraphView : View {
+    let title: String
     let data: [DailyTimeLog]
     @State private var pastDaysToShow: Int = 30
     
@@ -157,12 +188,12 @@ struct GraphView : View {
         let avgMinutesNonzero = totalMinutesNonzero / daysNonzero
         
         let display0 = String(format: "Showing past %d days...", Int(totalDays))
-        let display1 = String(format: "Days Stretched: %d%%", percentNonzero)
+        let display1 = String(format: "Days Attempted: %d%%", percentNonzero)
         let display2 = String(format: "Average Minutes: %.1f", avgMinutes)
-        let display3 = String(format: "Average Minutes (When Stretching): %.1f", avgMinutesNonzero)
+        let display3 = String(format: "Average Minutes (When Attempted): %.1f", avgMinutesNonzero)
         
         return VStack {
-            Text("Your Stretching")
+            Text("Your \(title)")
                 .font(.largeTitle)
                 .padding()
             Chart(dataSlice) {
@@ -210,6 +241,7 @@ struct ContentView: View {
     @Binding var stretchMinutesPerDay: Int
     @Binding var practiceSecondsRemaining: Int
     @Binding var practiceMinutesPerDay: Int
+    @Binding var caloriesToday: Int
     
     @Environment(\.scenePhase) private var scenePhase
     
@@ -224,21 +256,23 @@ struct ContentView: View {
         return TabView {
             // Stretching: Timer tab
             RemainingSecondsView(
+                title: "Stretching",
                 secondsRemaining: $stretchSecondsRemaining,
                 updateRemainingTime: updateRemainingTime,
                 recordStretch: recordStretch)
             .tabItem {
-                Label("Stretch Timer", systemImage: "clock.fill")
+                Label("Timer", systemImage: "clock.fill")
             }
             
             // Stretching: Graph tab
-            GraphView(data: stretchLog)
+            GraphView(title: "Stretching", data: stretchLog)
                 .tabItem {
                     Label("Stretch Graph", systemImage: "chart.bar.fill")
                 }
             
             // Practice: Timer tab
             RemainingSecondsView(
+                title: "Practice",
                 secondsRemaining: $practiceSecondsRemaining,
                 updateRemainingTime: updateRemainingTime,
                 recordStretch: recordPractice)
@@ -247,7 +281,7 @@ struct ContentView: View {
             }
             
             // Practice: Graph tab
-            GraphView(data: practiceLog)
+            GraphView(title: "Practice", data: practiceLog)
                 .tabItem {
                     Label("Practice Graph", systemImage: "chart.bar")
                 }
@@ -257,7 +291,8 @@ struct ContentView: View {
                 stretchSecondsRemaining: $stretchSecondsRemaining,
                 stretchMinutesPerDay: $stretchMinutesPerDay,
                 practiceSecondsRemaining: $practiceSecondsRemaining,
-                practiceMinutesPerDay: $practiceMinutesPerDay)
+                practiceMinutesPerDay: $practiceMinutesPerDay,
+                caloriesToday: $caloriesToday)
             .tabItem {
                 Label("Settings", systemImage: "gear")
             }
@@ -280,6 +315,7 @@ struct ContentView_Previews: PreviewProvider {
             stretchMinutesPerDay: $store.data.settings.stretchingMinutesPerDay,
             practiceSecondsRemaining: $store.data.current.practiceSecondsRemaining,
             practiceMinutesPerDay: $store.data.settings.practiceMinutesPerDay,
+            caloriesToday: $store.data.settings.caloriesToday,
             stretchLog: store.data.minutesOverTime().0,
             practiceLog: store.data.minutesOverTime().1) {
                 store.data.update()

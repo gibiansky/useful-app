@@ -24,6 +24,7 @@ struct UsefulApp: App {
                 stretchMinutesPerDay: $store.data.settings.stretchingMinutesPerDay,
                 practiceSecondsRemaining: $store.data.current.practiceSecondsRemaining,
                 practiceMinutesPerDay: $store.data.settings.practiceMinutesPerDay,
+                caloriesToday: $store.data.settings.caloriesToday,
                 stretchLog: stretchLog,
                 practiceLog: practiceLog) {
                 store.data.update()
